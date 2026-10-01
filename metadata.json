@@ -1,0 +1,6 @@
+{
+  "name": "SBS Transit Live SG",
+  "description": "Real-time Singapore SBS Transit bus arrivals, passenger crowding telemetry, stop sequencing, and route planning.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

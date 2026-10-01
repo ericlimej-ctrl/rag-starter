@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas-light: #F8FAFC;
+  --color-outline: #807382;
+  --color-outline-variant: #d2c1d3;
+  --color-primary: #5e0081;
+  --color-primary-container: #7b1fa2;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #e8aaff;
+  --color-secondary: #ba0a06;
+  --color-secondary-container: #df2d1f;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #fffbff;
+  --color-surface: #fef7ff;
+  --color-surface-subtle: #F1F5F9;
+  --color-surface-bright: #fef7ff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f9f0ff;
+  --color-surface-container: #f4ebfb;
+  --color-surface-container-high: #eee5f5;
+  --color-surface-container-highest: #e8dfef;
+  --color-surface-variant: #e8dfef;
+  --color-on-surface: #1e1a25;
+  --color-on-surface-variant: #4e4351;
+  --color-on-background: #1e1a25;
+  --color-load-seats: #0D8A4E;
+  --color-load-standing: #D97706;
+  --color-load-limited: #DC2626;
+  --color-lavender-accent: #A19BD1;
+
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.08); }
+}
+
+.pulse-indicator {
+  animation: pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+  line-height: 1;
+  display: inline-block;
+  vertical-align: middle;
+}
