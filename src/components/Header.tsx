@@ -5,13 +5,15 @@ interface HeaderProps {
   onTabChange: (tab: 'nearby' | 'services' | 'planner' | 'saved') => void;
   savedCount: number;
   onRefreshLocation?: () => void;
+  onOpenHealthModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
   onTabChange,
   savedCount,
-  onRefreshLocation
+  onRefreshLocation,
+  onOpenHealthModal
 }) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -119,10 +121,14 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Trailing Action Cluster */}
         <div className="flex items-center gap-2 relative">
-          <div className="hidden lg:flex items-center text-[11px] bg-surface-container text-primary font-bold px-3 py-1.5 rounded-full border border-primary/20">
+          <button
+            onClick={onOpenHealthModal}
+            title="Inspect API Health & LTA DataMall Gateway Status"
+            className="hidden lg:flex items-center text-[11px] bg-surface-container hover:bg-surface-container-high text-primary font-bold px-3 py-1.5 rounded-full border border-primary/20 cursor-pointer transition-colors"
+          >
             <span className="w-2 h-2 rounded-full bg-load-seats mr-2 pulse-indicator"></span>
             LTA DataStream Connected
-          </div>
+          </button>
 
           <button
             onClick={() => {

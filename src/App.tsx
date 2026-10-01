@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { AdvisoryBanner } from './components/AdvisoryBanner';
 import { SearchHero } from './components/SearchHero';
@@ -14,16 +14,20 @@ import { OperatingDetailsCard } from './components/OperatingDetailsCard';
 import { MapViewModal } from './components/MapViewModal';
 import { FareCalculatorModal } from './components/FareCalculatorModal';
 import { AllServicesModal } from './components/AllServicesModal';
+import { ApiHealthModal } from './components/ApiHealthModal';
 import { BusServicesView } from './components/BusServicesView';
 import { RoutePlannerView } from './components/RoutePlannerView';
 import { SavedServicesView } from './components/SavedServicesView';
 import { Footer } from './components/Footer';
 import { MobileNav } from './components/MobileNav';
 import { BUS_SERVICES } from './data/busData';
+import { fetchBusArrivals, parseLtaArrival } from './utils/ltaApi';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'nearby' | 'services' | 'planner' | 'saved'>('nearby');
   const [selectedServiceNo, setSelectedServiceNo] = useState<string>('65');
+  const [currentStopCode, setCurrentStopCode] = useState<string>('76199');
+  const [currentStopName, setCurrentStopName] = useState<string>('Opp Tampines Mall');
   const [directionKey, setDirectionKey] = useState<'direction1' | 'direction2'>('direction1');
   const [savedServices, setSavedServices] = useState<string[]>(['65', '23']);
 
@@ -31,6 +35,10 @@ export default function App() {
   const [showMapModal, setShowMapModal] = useState<boolean>(false);
   const [showFareModal, setShowFareModal] = useState<boolean>(false);
   const [showAllServicesModal, setShowAllServicesModal] = useState<boolean>(false);
+  const [showHealthModal, setShowHealthModal] = useState<boolean>(false);
+
+  // Dynamic arrival state from LTA endpoint
+  const [dynamicArrivals, setDynamicArrivals] = useState<any[] | null>(null);
 
   // Toast message
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -43,7 +51,47 @@ export default function App() {
   };
 
   // Current selected service fallback
-  const currentService = BUS_SERVICES[selectedServiceNo] || BUS_SERVICES['65'];
+  const baseService = BUS_SERVICES[selectedServiceNo] || BUS_SERVICES['65'];
+
+  // Fetch real LTA bus arrivals from /api/bus-arrival
+  useEffect(() => {
+    let isMounted = true;
+    async function loadLiveArrivals() {
+      try {
+        const response = await fetchBusArrivals(currentStopCode, selectedServiceNo);
+        if (!isMounted) return;
+
+        const svc = response.Services?.find(
+          (s) => s.ServiceNo.toUpperCase() === selectedServiceNo.toUpperCase()
+        );
+
+        if (svc) {
+          const arr1 = parseLtaArrival(svc.NextBus, `${svc.Operator} ${svc.ServiceNo}`);
+          const arr2 = parseLtaArrival(svc.NextBus2, `${svc.Operator} ${svc.ServiceNo}`);
+          const arr3 = parseLtaArrival(svc.NextBus3, `${svc.Operator} ${svc.ServiceNo}`);
+
+          const liveList = [arr1, arr2, arr3].filter(Boolean);
+          if (liveList.length > 0) {
+            setDynamicArrivals(liveList);
+          }
+        }
+      } catch (err) {
+        // Fall back to built-in simulation telemetry
+        if (isMounted) setDynamicArrivals(null);
+      }
+    }
+
+    loadLiveArrivals();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentStopCode, selectedServiceNo]);
+
+  // Merge service with dynamic arrivals if available
+  const currentService = {
+    ...baseService,
+    arrivals: dynamicArrivals && dynamicArrivals.length > 0 ? dynamicArrivals : baseService.arrivals
+  };
 
   const handleSelectService = (serviceNo: string) => {
     if (BUS_SERVICES[serviceNo]) {
@@ -52,9 +100,10 @@ export default function App() {
       setActiveTab('nearby');
       showToast(`Inspecting Service ${serviceNo}`);
     } else {
-      showToast(`Service ${serviceNo} not found in Tampines corridor demo. Switching to 65.`);
-      setSelectedServiceNo('65');
+      setSelectedServiceNo(serviceNo);
       setDirectionKey('direction1');
+      setActiveTab('nearby');
+      showToast(`Querying LTA DataMall v3 for Service ${serviceNo}`);
     }
   };
 
@@ -99,6 +148,7 @@ export default function App() {
         onTabChange={setActiveTab}
         savedCount={savedServices.length}
         onRefreshLocation={handleRefreshLocation}
+        onOpenHealthModal={() => setShowHealthModal(true)}
       />
 
       {/* Advisory Banner */}
@@ -114,8 +164,8 @@ export default function App() {
               onSelectService={handleSelectService}
               onSwitchDirection={handleSwitchDirection}
               onOpenMap={() => setShowMapModal(true)}
-              currentStopName="Opp Tampines Mall"
-              currentStopCode="76199"
+              currentStopName={currentStopName}
+              currentStopCode={currentStopCode}
             />
 
             {/* Live Arrival Hero Display */}
@@ -136,6 +186,8 @@ export default function App() {
                   directionKey={directionKey}
                   onReverseDirection={handleSwitchDirection}
                   onSelectStop={(code, name) => {
+                    setCurrentStopCode(code);
+                    setCurrentStopName(name);
                     showToast(`Selected Stop: ${name} (${code})`);
                   }}
                 />
@@ -144,7 +196,7 @@ export default function App() {
               {/* Right 4 Columns: Other Buses & Operating Details */}
               <div className="lg:col-span-4 space-y-6">
                 <OtherServicesCard
-                  currentStopCode="76199"
+                  currentStopCode={currentStopCode}
                   onSelectService={handleSelectService}
                   onViewAllServices={() => setShowAllServicesModal(true)}
                 />
@@ -211,6 +263,11 @@ export default function App() {
         isOpen={showAllServicesModal}
         onClose={() => setShowAllServicesModal(false)}
         onSelectService={handleSelectService}
+      />
+
+      <ApiHealthModal
+        isOpen={showHealthModal}
+        onClose={() => setShowHealthModal(false)}
       />
 
       {/* Toast Notification */}
